@@ -10,11 +10,11 @@ const LandingPage = () => {
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-20">
         <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-gradient-to-br from-indigo-200/60 to-transparent blur-3xl" />
         <div className="absolute top-1/3 -right-28 h-[28rem] w-[28rem] rounded-full bg-gradient-to-tl from-purple-200/60 to-transparent blur-3xl" />
-        {/* <div className="absolute bottom-[-8rem] left-1/2 -translate-x-1/2 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-indigo-100/70 to-transparent blur-3xl" /> */}
       </div>
+      
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200 overflow-x-clip">
-  <div className="w-screen max-w-none pr-3 sm:pr-5 md:pr-6 lg:pr-8 pl-6 sm:pl-8 md:pl-10 lg:pl-12 xl:pl-16 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
+        <div className="w-full pr-3 sm:pr-5 md:pr-6 lg:pr-8 pl-6 sm:pl-8 md:pl-10 lg:pl-12 xl:pl-16 h-16 flex items-center justify-between">
           {/* Brand/logo */}
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white grid place-items-center shadow-sm">
@@ -47,8 +47,8 @@ const LandingPage = () => {
       {/* Main content fills remaining viewport */}
       <main className="flex-1">
         {/* Hero section with reduced height and padding */}
-  <section className="relative overflow-hidden min-h-[40vh] flex items-center">
-          <div className="w-screen max-w-none px-2 sm:px-3 md:px-4 py-2 sm:py-4 lg:py-6">
+        <section className="relative overflow-hidden min-h-[40vh] flex items-center">
+          <div className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-4 lg:py-6">
             <div className="flex justify-center">
               <div className="text-center max-w-5xl px-2">
                 <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-extrabold tracking-tight text-slate-900">
@@ -71,8 +71,6 @@ const LandingPage = () => {
                     Join as Teacher
                   </Link>
                 </div>
-
-
               </div>
             </div>
           </div>
@@ -80,7 +78,7 @@ const LandingPage = () => {
 
         {/* Features with reduced vertical spacing */}
         <section className="py-4">
-          <div className="w-screen max-w-none px-2 sm:px-3 md:px-4">
+          <div className="w-full px-2 sm:px-3 md:px-4">
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center">Why Choose Vidya Vichar?</h2>
             <p className="mt-2 text-slate-600 text-center max-w-3xl mx-auto px-2">
               Practical tools for both students and teachers to keep learning focused and engaging.
@@ -126,5 +124,4 @@ const LandingPage = () => {
   );
 };
 
-export default LandingPage;// hmr
-// hmr2
+export default LandingPage;
