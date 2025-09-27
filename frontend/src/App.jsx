@@ -1,86 +1,57 @@
 import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 
-// --- SHARED MOCK DATABASE & API ---
-// This acts as our persistent backend for the duration of the browser session.
-// Any data changed here will be visible to all users (professor/student) after logging in/out.
-const mockDatabase = {
-    classes: [
-        { id: '1', name: 'Software System Development', date: new Date().toISOString().split('T')[0], professorId: 'prof-1' },
-        { id: '2', name: 'Advanced Algorithms', date: new Date().toISOString().split('T')[0], professorId: 'prof-1' }
-    ],
-    questions: {
-        '1': [
-            { id: 'q1', text: "What's the difference between horizontal and vertical scaling?", timestamp: new Date(), status: 'unanswered' },
-            { id: 'q2', text: 'Can caching introduce consistency issues?', timestamp: new Date(), status: 'answered' },
-        ]
-    },
-    users: []
-};
+// --- API SERVICE ---
+const API_URL = 'http://localhost:8080/api';
 
-const mockApi = {
-    login: async (email, role) => {
-        console.log("API: Logging in...", { email, role });
-        const mockUserData = { email, role, id: 'mock-user-id-' + Math.random() };
-        return mockUserData;
-    },
-    signup: async (email, role) => {
-        console.log("API: Signing up...", { email, role });
-        const mockUserData = { email, role, id: 'mock-user-id-' + Math.random() };
-        return mockUserData;
-    },
-    getClasses: async (date) => {
-        console.log(`API: Fetching classes for ${date}`);
-        return mockDatabase.classes.filter(c => c.date === date);
-    },
-    createClass: async (classData) => {
-        const newClass = {
-            ...classData,
-            id: 'class-' + Math.random()
+const apiService = {
+    async fetch(endpoint, options = {}) {
+        const token = localStorage.getItem('token');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers,
         };
-        mockDatabase.classes.push(newClass);
-        console.log("API: Class created and saved to mock DB", newClass);
-        return newClass;
-    },
-    getQuestions: async (classId) => {
-        console.log(`API: Fetching questions for class ${classId}`);
-        return mockDatabase.questions[classId] || [];
-    },
-    postQuestion: async (classId, questionData) => {
-        if (!mockDatabase.questions[classId]) {
-            mockDatabase.questions[classId] = [];
+        if (token) {
+            headers['x-auth-token'] = token;
         }
-        const newQuestion = { ...questionData, id: 'q-' + Math.random() };
-        mockDatabase.questions[classId].unshift(newQuestion);
-        console.log(`API: New question for class ${classId}`, newQuestion);
-        return newQuestion;
-    },
-    updateQuestionStatus: async(classId, questionId, status) => {
-         const classQuestions = mockDatabase.questions[classId] || [];
-         const question = classQuestions.find(q => q.id === questionId);
-         if(question) {
-            question.status = status;
-            console.log(`API: Updated Q:${questionId} to ${status}`);
-            return question;
-         }
-         return null;
-    },
-    deleteQuestion: async(classId, questionId) => {
-        if(mockDatabase.questions[classId]) {
-            mockDatabase.questions[classId] = mockDatabase.questions[classId].filter(q => q.id !== questionId);
-            console.log(`API: Deleted Q:${questionId}`);
-            return true;
-        }
-        return false;
-    }
-};
 
+        const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Something went wrong');
+        }
+        if (response.status === 204) return;
+        return response.json();
+    },
+    login: (email, password) => apiService.fetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+    }),
+    signup: (email, password, role) => apiService.fetch('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, role })
+    }),
+    getClasses: (date) => apiService.fetch(`/classes?date=${date}`),
+    createClass: (classData) => apiService.fetch('/classes', {
+        method: 'POST',
+        body: JSON.stringify(classData)
+    }),
+    getQuestions: (classId) => apiService.fetch(`/classes/${classId}/questions`),
+    postQuestion: (classId, questionData) => apiService.fetch(`/classes/${classId}/questions`, {
+        method: 'POST',
+        body: JSON.stringify(questionData)
+    }),
+    updateQuestionStatus: (classId, questionId, status) => apiService.fetch(`/classes/${classId}/questions/${questionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+    }),
+    deleteQuestion: (classId, questionId) => apiService.fetch(`/classes/${classId}/questions/${questionId}`, {
+        method: 'DELETE'
+    })
+};
 
 // --- CONTEXT ---
 const AuthContext = createContext();
-
-const useAuth = () => {
-  return useContext(AuthContext);
-}
+const useAuth = () => useContext(AuthContext);
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -88,27 +59,31 @@ const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const token = localStorage.getItem('token');
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
     }
     setLoading(false);
   }, []);
 
-  const login = async (email, password, role) => {
-    const userData = await mockApi.login(email, role);
+  const login = async (email, password) => {
+    const { token, user: userData } = await apiService.login(email, password);
+    localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
   };
 
   const signup = async (email, password, role) => {
-    const userData = await mockApi.signup(email, role);
+    const { token, user: userData } = await apiService.signup(email, password, role);
+    localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     return userData;
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
   };
@@ -117,7 +92,6 @@ const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
 };
-
 
 // --- COMPONENTS ---
 
@@ -151,9 +125,9 @@ const LoginPage = () => {
         try {
             const role = isProfessorLogin ? 'professor' : 'student';
             if (isSignUp) await signup(email, password, role);
-            else await login(email, password, role);
+            else await login(email, password);
         } catch (err) {
-            setError('Failed to authenticate.');
+            setError(err.message || 'Failed to authenticate.');
             console.error(err);
         }
     };
@@ -174,13 +148,13 @@ const LoginPage = () => {
                 <form onSubmit={handleAuthAction} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium">Email</label>
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"/>
+                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-3 py-2 mt-1 border rounded-md"/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium">Password</label>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-3 py-2 mt-1 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"/>
+                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-3 py-2 mt-1 border rounded-md"/>
                     </div>
-                    <button type="submit" className="w-full px-4 py-2 font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700">{actionText}</button>
+                    <button type="submit" className="w-full px-4 py-2 font-semibold text-white bg-indigo-600 rounded-md">{actionText}</button>
                 </form>
                 <p className="text-sm text-center">
                     {isSignUp ? 'Already have an account?' : "Don't have an account?"}
@@ -237,8 +211,9 @@ const CreateClassModal = ({ date, onClose, onClassCreated }) => {
     const handleCreateClass = async (e) => {
         e.preventDefault();
         if (!className.trim()) return;
-        const newClass = await mockApi.createClass({ name: className, date, professorId: user.id });
-        onClassCreated(newClass);
+        // BUG FIX: Pass the correct professor ID from the user object
+        await apiService.createClass({ name: className, date, professorId: user.id });
+        onClassCreated();
         onClose(); 
     };
     
@@ -265,22 +240,26 @@ const HomePage = ({ onEnterClass }) => {
     const [classes, setClasses] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { user } = useAuth();
-    const formattedSelectedDate = useMemo(() => selectedDate.toISOString().split('T')[0], [selectedDate]);
-
-    const handleClassCreated = (newClass) => {
-        if (newClass.date === formattedSelectedDate) {
-            setClasses(prevClasses => [...prevClasses, newClass]);
-        }
-    };
     
     useEffect(() => {
         const fetchClasses = async () => {
-            const data = await mockApi.getClasses(formattedSelectedDate);
-            setClasses(data);
+            const dateString = selectedDate.toISOString().split('T')[0];
+            try {
+                const data = await apiService.getClasses(dateString);
+                setClasses(data);
+            } catch (error) {
+                console.error("Failed to fetch classes:", error);
+                setClasses([]);
+            }
         };
-        fetchClasses();
-    }, [formattedSelectedDate]);
 
+        fetchClasses();
+    }, [selectedDate]);
+
+    const handleClassCreated = () => {
+        setSelectedDate(new Date(selectedDate));
+    };
+    
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
@@ -296,7 +275,7 @@ const HomePage = ({ onEnterClass }) => {
                 <div className="space-y-3">
                     {classes.length > 0 ? (
                         classes.map(c => (
-                            <div key={c.id} className="p-4 bg-gray-100 rounded-md flex justify-between items-center">
+                            <div key={c._id} className="p-4 bg-gray-100 rounded-md flex justify-between items-center">
                                 <span className="font-semibold">{c.name}</span>
                                 <button onClick={() => onEnterClass(c)} className="px-3 py-1 text-sm text-white bg-green-500 rounded-md">Enter</button>
                             </div>
@@ -304,32 +283,46 @@ const HomePage = ({ onEnterClass }) => {
                     ) : (<p className="text-gray-500">No classes scheduled for this day.</p>)}
                 </div>
             </div>
-            {isModalOpen && <CreateClassModal date={formattedSelectedDate} onClose={() => setIsModalOpen(false)} onClassCreated={handleClassCreated} />}
+            {isModalOpen && <CreateClassModal date={selectedDate.toISOString().split('T')[0]} onClose={() => setIsModalOpen(false)} onClassCreated={handleClassCreated} />}
         </div>
     );
 };
 
-const ProfessorClassView = ({ classId }) => {
+const ProfessorClassView = ({ classInfo }) => {
     const [questions, setQuestions] = useState([]);
     const [filter, setFilter] = useState('all');
 
     useEffect(() => {
-        const fetchQuestions = async () => setQuestions(await mockApi.getQuestions(classId));
+        const fetchQuestions = async () => {
+            try { setQuestions(await apiService.getQuestions(classInfo._id)); } 
+            catch (error) { console.error("Failed to fetch questions:", error); }
+        };
         fetchQuestions();
-    }, [classId]);
+    }, [classInfo._id]);
 
     const updateQuestionStatus = async (questionId, newStatus) => {
-        await mockApi.updateQuestionStatus(classId, questionId, newStatus);
-        setQuestions(questions.map(q => q.id === questionId ? { ...q, status: newStatus } : q));
+        try {
+            await apiService.updateQuestionStatus(classInfo._id, questionId, newStatus);
+            setQuestions(questions.map(q => q._id === questionId ? { ...q, status: newStatus } : q));
+        } catch (error) { console.error("Failed to update status:", error); }
     };
 
     const deleteQuestion = async(questionId) => {
-        await mockApi.deleteQuestion(classId, questionId);
-        setQuestions(questions.filter(q => q.id !== questionId));
+        try {
+            await apiService.deleteQuestion(classInfo._id, questionId);
+            setQuestions(questions.filter(q => q._id !== questionId));
+        } catch (error) { console.error("Failed to delete question:", error); }
     }
 
     const filteredQuestions = questions.filter(q => filter === 'all' || q.status === filter);
-    const getStatusColor = (status) => status === 'answered' ? 'border-green-400' : status === 'important' ? 'border-yellow-400' : 'border-blue-400';
+    
+    const getStatusStyling = (status) => {
+        switch (status) {
+            case 'answered': return 'bg-green-100';
+            case 'important': return 'bg-yellow-100';
+            default: return 'bg-blue-100';
+        }
+    };
     
     return (
         <div>
@@ -342,14 +335,14 @@ const ProfessorClassView = ({ classId }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredQuestions.length === 0 && <p className="text-gray-500 col-span-full">No questions in this category.</p>}
                 {filteredQuestions.map(q => (
-                    <div key={q.id} className={`p-4 rounded-lg shadow bg-gray-50 border-l-4 ${getStatusColor(q.status)}`}>
-                        <p className="mb-4">{q.text}</p>
+                    <div key={q._id} className={`p-4 rounded-lg shadow ${getStatusStyling(q.status)}`}>
+                        <p className="mb-4 text-gray-800">{q.text}</p>
                         <div className="text-xs text-gray-500 mb-3">{new Date(q.timestamp).toLocaleString()}</div>
                         <div className="flex flex-wrap gap-2">
-                             <button onClick={() => updateQuestionStatus(q.id, 'answered')} className="px-2 py-1 text-xs bg-green-500 text-white rounded">Answered</button>
-                             <button onClick={() => updateQuestionStatus(q.id, 'important')} className="px-2 py-1 text-xs bg-yellow-500 text-white rounded">Important</button>
-                             <button onClick={() => updateQuestionStatus(q.id, 'unanswered')} className="px-2 py-1 text-xs bg-blue-500 text-white rounded">Unanswered</button>
-                             <button onClick={() => deleteQuestion(q.id)} className="px-2 py-1 text-xs bg-red-500 text-white rounded">Delete</button>
+                             <button onClick={() => updateQuestionStatus(q._id, 'answered')} className="px-2 py-1 text-xs bg-green-500 text-white rounded">Answered</button>
+                             <button onClick={() => updateQuestionStatus(q._id, 'important')} className="px-2 py-1 text-xs bg-yellow-500 text-white rounded">Important</button>
+                             <button onClick={() => updateQuestionStatus(q._id, 'unanswered')} className="px-2 py-1 text-xs bg-blue-500 text-white rounded">Unanswered</button>
+                             <button onClick={() => deleteQuestion(q._id)} className="px-2 py-1 text-xs bg-red-500 text-white rounded">Delete</button>
                         </div>
                     </div>
                 ))}
@@ -358,29 +351,37 @@ const ProfessorClassView = ({ classId }) => {
     );
 };
 
-const StudentClassView = ({ classId }) => {
+const StudentClassView = ({ classInfo }) => {
     const [questions, setQuestions] = useState([]);
     const [newQuestion, setNewQuestion] = useState('');
     const { user } = useAuth();
 
     useEffect(() => {
-        const fetchQuestions = async () => setQuestions(await mockApi.getQuestions(classId));
+        const fetchQuestions = async () => {
+            try { setQuestions(await apiService.getQuestions(classInfo._id)); }
+            catch (error) { console.error("Failed to fetch questions:", error); }
+        };
         fetchQuestions();
-    }, [classId]);
+    }, [classInfo._id]);
 
     const handleAskQuestion = async (e) => {
         e.preventDefault();
         if (!newQuestion.trim()) return;
-        const questionData = { text: newQuestion, studentId: user.id, timestamp: new Date(), status: 'unanswered' };
-        const createdQuestion = await mockApi.postQuestion(classId, questionData);
-        setQuestions(prevQuestions => [createdQuestion, ...prevQuestions]);
-        setNewQuestion('');
+        try {
+            // BUG FIX: Pass the correct student ID and class ID
+            const questionData = { text: newQuestion, studentId: user.id };
+            const createdQuestion = await apiService.postQuestion(classInfo._id, questionData);
+            setQuestions(prevQuestions => [createdQuestion, ...prevQuestions]);
+            setNewQuestion('');
+        } catch (error) { console.error("Failed to post question:", error); }
     };
     
-    const getStatusInfo = (status) => {
-        if (status === 'answered') return { text: 'Answered', color: 'bg-green-200 text-green-800'};
-        if (status === 'important') return { text: 'Important', color: 'bg-yellow-200 text-yellow-800'};
-        return { text: 'Unanswered', color: 'bg-blue-200 text-blue-800'};
+    const getStatusStyling = (status) => {
+        switch (status) {
+            case 'answered': return { card: 'bg-green-100', badge: 'bg-green-200 text-green-800' };
+            case 'important': return { card: 'bg-yellow-100', badge: 'bg-yellow-200 text-yellow-800' };
+            default: return { card: 'bg-blue-100', badge: 'bg-blue-200 text-blue-800' };
+        }
     };
 
     return (
@@ -390,20 +391,21 @@ const StudentClassView = ({ classId }) => {
                 <button type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-md">Ask</button>
             </form>
             <h3 className="text-xl font-semibold mb-4">Questions Board</h3>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {questions.length === 0 && <p className="text-gray-500 col-span-full">No questions yet. Be the first to ask!</p>}
                 {questions.map(q => {
-                    const statusInfo = getStatusInfo(q.status);
+                    const statusStyle = getStatusStyling(q.status);
+                    const statusText = q.status.charAt(0).toUpperCase() + q.status.slice(1);
                     return (
-                        <div key={q.id} className="p-4 bg-gray-100 rounded-lg flex justify-between items-start">
-                           <div>
-                                <p>{q.text}</p>
-                                <div className="text-xs text-gray-500 mt-2">{new Date(q.timestamp).toLocaleString()}</div>
+                        <div key={q._id} className={`p-4 rounded-lg shadow ${statusStyle.card}`}>
+                           <div className="flex justify-between items-start mb-2">
+                               <p className="text-gray-800 break-words w-4/5">{q.text}</p>
+                               <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusStyle.badge}`}>{statusText}</span>
                            </div>
-                           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusInfo.color}`}>{statusInfo.text}</span>
+                           <div className="text-xs text-gray-500 mt-2">{new Date(q.timestamp).toLocaleString()}</div>
                         </div>
                     );
                 })}
-                {questions.length === 0 && <p className="text-gray-500">No questions yet. Be the first to ask!</p>}
             </div>
         </div>
     );
@@ -418,19 +420,17 @@ const ClassroomPage = ({ classInfo, onBack }) => {
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <h2 className="text-3xl font-bold mb-1">{classInfo.name}</h2>
                 <p className="text-gray-500 mb-6">Date: {new Date(classInfo.date).toLocaleDateString()}</p>
-                {user.role === 'professor' ? <ProfessorClassView classId={classInfo.id} /> : <StudentClassView classId={classInfo.id} />}
+                {user.role === 'professor' ? <ProfessorClassView classInfo={classInfo} /> : <StudentClassView classInfo={classInfo} />}
             </div>
         </div>
     );
 };
 
-// --- Main App Component ---
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedClass, setSelectedClass] = useState(null);
 
-  // FIX: Reset the view to home when user logs out.
   useEffect(() => {
     if (!user) {
       setCurrentPage('home');
