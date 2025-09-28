@@ -15,6 +15,10 @@ const CoursesSchema = new mongoose.Schema({
     type: String,
     unique: true
   }],
+  TA: [{
+    type: String,
+    unique: true
+  }],
   batch: {
     type: String,
     enum: ['MT', 'BT', 'PH', 'MS'],

@@ -1,3 +1,5 @@
+
+
 const express = require('express');
 const router = express.Router();
 
@@ -14,30 +16,41 @@ router.get('/student/dashboard/pending-courses', authenticate(['student']), stud
 router.get('/student/dashboard/all-courses', authenticate(['student']), studentController.getCoursesForStudents);
 router.get('/student/dashboard/all-lectures', authenticate(['student']), studentController.getStudentLectures);
 router.get('/student/dashboard/prev-lectures', authenticate(['student']), studentController.getPrevStudentLectures);
-router.get('/student/dashboard/all-questions', authenticate(['student']), studentController.getAllQuestions);
-router.get('/student/dashboard/my-questions', authenticate(['student']), studentController.getMyQuestions);
+router.get('/student/dashboard/all-questions/:lecture_id', authenticate(['student']), studentController.getAllQuestions);
+router.get('/student/dashboard/my-questions/:lecture_id', authenticate(['student']), studentController.getMyQuestions);
+router.get('/student/dashboard/all-answers/:question_id', authenticate(['student']), studentController.getAllAnswers);
 //POST
 router.post('/student/dashboard/join-course', authenticate(['student']), studentController.joinCourse);
 router.post('/student/dashboard/join-class', authenticate(['student']), studentController.joinLecture);
 router.post('/student/dashboard/ask-question', authenticate(['student']), studentController.askQuestion);
 router.post('/student/dashboard/answer-question', authenticate(['student']), studentController.answerQuestion);
+//PUT
+router.put('/student/dashboard/edit-question/:question_id', authenticate(['student']), studentController.editQuestion);
+//DELETE
+router.delete('/student/dashboard/delete-question/:question_id', authenticate(['student']), studentController.deleteQuestion);
+router.delete('/student/dashboard/delete-answer/:question_id', authenticate(['student']), studentController.deleteAnswer);
 
 
 
-// Teacher Dashboard Routes
+
+
+// Teacher Dashboard Overview and Profile
 router.get('/teacher/dashboard/overview', authenticate(['teacher']), teacherController.getTeacherOverview);
-router.get('/teacher/dashboard/profile', authenticate(['teacher']), teacherController.getTeacherProfile);
 router.put('/teacher/dashboard/profile', authenticate(['teacher']), teacherController.updateTeacherProfile);
-router.post('/teacher/dashboard/create-course', authenticate(['teacher']), teacherController.createCourse);
-router.get('/teacher/dashboard/your-courses', authenticate(['teacher']), teacherController.getYourCourses);
-router.get('/teacher/dashboard/course/:courseId', authenticate(['teacher']), teacherController.getTeacherCourseDetails);
-router.post('/teacher/dashboard/create-class', authenticate(['teacher']), teacherController.createClass);
-router.get('/teacher/dashboard/class-page/:classId', authenticate(['teacher']), teacherController.getClassPage);
-router.get('/teacher/dashboard/joined-students/:classId', authenticate(['teacher']), teacherController.getJoinedStudents);
-router.get('/teacher/dashboard/doubts-tabs/all', authenticate(['teacher']), teacherController.getAllDoubtsForTeacher);
-router.get('/teacher/dashboard/doubts-tabs/unanswered', authenticate(['teacher']), teacherController.getUnansweredDoubts);
-router.get('/teacher/dashboard/doubts-tabs/answered', authenticate(['teacher']), teacherController.getAnsweredDoubtsForTeacher);
-router.post('/teacher/dashboard/end-class/:classId', authenticate(['teacher']), teacherController.endClass);
-
+router.get('/teacher/all', authenticate(['teacher']), teacherController.getAllTeachers);
+router.get('/teacher/:teacher_id', authenticate(['teacher']), teacherController.getTeacherByid);
+router.get('/teacher/courses', authenticate(['teacher']), teacherController.getAllCourses);
+router.get('/teacher/course/:course_id/pending-requests', authenticate(['teacher']), teacherController.getPendingRequests);
+router.get('/teacher/course/:course_id/students', authenticate(['teacher']), teacherController.getAllStudents);
+router.get('/teacher/course/:course_id/student/:student_id', authenticate(['teacher']), teacherController.getStudentById);
+router.get('/teacher/lecture/:lecture_id/questions', authenticate(['teacher']), teacherController.getAllQuestions);
+router.get('/teacher/question/:question_id/answers', authenticate(['teacher']), teacherController.getAllAnswers);
+//POST
+router.post('/teacher/course', authenticate(['teacher']), teacherController.createCourse);
+router.post('/teacher/lecture', authenticate(['teacher']), teacherController.createLecture);
+router.post('/teacher/course/make-ta', authenticate(['teacher']), teacherController.makeStudentTA);
+router.post('/teacher/question/answer', authenticate(['teacher']), teacherController.answerQuestion);
+router.post('/teacher/course/accept-requests', authenticate(['teacher']), teacherController.acceptPendingRequests);
+router.post('/teacher/course/reject-requests', authenticate(['teacher']), teacherController.rejectPendingRequests);
 
 module.exports = router;

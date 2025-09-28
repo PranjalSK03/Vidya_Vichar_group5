@@ -20,10 +20,9 @@ const StudentSchema = new mongoose.Schema({
 		type: String,
 		required: true
 	},
-	is_TA: {
-		type: Boolean,
-		default: false
-	},
+	is_TA: [{//contains list of course ids where student is TA
+		type: String,
+	}],
     courses_id_request: [{
     	type: String,
     	required: true

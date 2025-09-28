@@ -1,9 +1,6 @@
-<<<<<<< HEAD
-=======
 
 
 
->>>>>>> side
 // Student Controller for handling student-specific operations
 const Student = require('../models/Students');
 const Course = require('../models/Courses');
@@ -98,10 +95,10 @@ const studentController = {
           instructorName = course.teacher_id.name;
         }
 
-        // Get TAs (students in student_list with is_TA true)
+        // Get TAs using course.TA array
         let TAs = [];
-        if (Array.isArray(course.student_list) && course.student_list.length > 0) {
-          TAs = await Student.find({ _id: { $in: course.student_list }, is_TA: true }, 'name roll_no');
+        if (Array.isArray(course.TA) && course.TA.length > 0) {
+          TAs = await Student.find({ _id: { $in: course.TA } }, 'name roll_no');
         }
 
         return {
@@ -163,10 +160,10 @@ const studentController = {
           instructorName = course.teacher_id.name;
         }
 
-        // Get TAs (students in student_list with is_TA true)
+        // Get TAs using course.TA array
         let TAs = [];
-        if (Array.isArray(course.student_list) && course.student_list.length > 0) {
-          TAs = await Student.find({ _id: { $in: course.student_list }, is_TA: true }, 'name roll_no');
+        if (Array.isArray(course.TA) && course.TA.length > 0) {
+          TAs = await Student.find({ _id: { $in: course.TA } }, 'name roll_no');
         }
 
         return {
@@ -251,9 +248,9 @@ const studentController = {
 
       // Filter lectures: only those starting within 15 min from now and not ended
       const filteredLectures = lectures.filter(lecture => {
-        if (!lecture.scheduled_time || !lecture.end_time) return false;
-        const start = new Date(lecture.scheduled_time);
-        const end = new Date(lecture.end_time);
+        if (!lecture.class_start || !lecture.class_end) return false;
+        const start = new Date(lecture.class_start);
+        const end = new Date(lecture.class_end);
         // Show if now >= (start - 15min) and now <= end
         return now >= new Date(start.getTime() - 15 * 60 * 1000) && now <= end;
       });
@@ -262,11 +259,13 @@ const studentController = {
         success: true,
         data: {
           lectures: filteredLectures.map(lecture => ({
-            lecture_id: lecture._id,
+            lecture_id: lecture.lecture_id,
             course_id: lecture.course_id?._id || lecture.course_id,
             course_name: lecture.course_id?.course_name,
-            scheduled_time: lecture.scheduled_time,
-            lecture_number: lecture.lecture_number
+            lecture_title: lecture.lecture_title,
+            lec_num: lecture.lec_num,
+            class_start: lecture.class_start,
+            class_end: lecture.class_end
           }))
         }
       });
@@ -297,10 +296,10 @@ const studentController = {
         course_id: { $in: student.courses_id }
       }).populate('course_id', 'course_name');
 
-      // Filter lectures: only those where now > end time
+      // Filter lectures: only those where now > class_end
       const filteredLectures = lectures.filter(lecture => {
-        if (!lecture.end_time) return false;
-        const end = new Date(lecture.end_time);
+        if (!lecture.class_end) return false;
+        const end = new Date(lecture.class_end);
         return now > end;
       });
 
@@ -308,11 +307,13 @@ const studentController = {
         success: true,
         data: {
           lectures: filteredLectures.map(lecture => ({
-            lecture_id: lecture._id,
+            lecture_id: lecture.lecture_id,
             course_id: lecture.course_id?._id || lecture.course_id,
             course_name: lecture.course_id?.course_name,
-            scheduled_time: lecture.scheduled_time,
-            lecture_number: lecture.lecture_number
+            lecture_title: lecture.lecture_title,
+            lec_num: lecture.lec_num,
+            class_start: lecture.class_start,
+            class_end: lecture.class_end
           }))
         }
       });
@@ -328,7 +329,7 @@ const studentController = {
     // Get all questions for a lecture
   getAllQuestions: async (req, res) => {
     try {
-      const { lectureId } = req.body;
+      const lectureId = req.params.lecture_id;
       if (!lectureId) {
         return res.status(400).json({
           success: false,
@@ -375,7 +376,7 @@ const studentController = {
   getMyQuestions: async (req, res) => {
     try {
       const studentId = req.user.id;
-      const { lectureId } = req.body;
+      const lectureId = req.params.lecture_id;
       if (!lectureId) {
         return res.status(400).json({
           success: false,
@@ -407,6 +408,105 @@ const studentController = {
               answer_type: a.answer_type
             }))
           }))
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  },
+
+  getAllAnswers: async (req, res) => {
+    try {
+      const { question_id } = req.params;
+      if (!question_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'question_id is required as a URL parameter.'
+        });
+      }
+
+      // Find the question and populate answers
+      const question = await Question.findOne({ question_id }).populate('answer');
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Question not found.'
+        });
+      }
+
+      // Return all answer content
+      res.status(200).json({
+        success: true,
+        data: {
+          answers: (question.answer || []).map(ans => ({
+            answer_id: ans._id,
+            answerer_name: ans.answerer_name,
+            answer: ans.answer,
+            answer_type: ans.answer_type
+          }))
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  },
+
+  editQuestion: async (req, res) => {
+    try {
+      const { question_id, question_text } = req.body;
+      const studentId = req.user.id;
+
+      if (!question_id || !question_text) {
+        return res.status(400).json({
+          success: false,
+          message: 'question_id and question_text are required.'
+        });
+      }
+
+      // Find the question by question_id and student_id
+      const question = await Question.findOne({ question_id, student_id: studentId });
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Question not found or not owned by user.'
+        });
+      }
+
+      if (question.is_answered) {
+        return res.status(400).json({
+          success: false,
+          message: 'Answered questions cannot be edited.'
+        });
+      }
+
+      // Update the question text
+      question.question_text = question_text;
+      await question.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Question updated successfully.',
+        data: {
+          question: {
+            question_id: question.question_id,
+            question_text: question.question_text,
+            student_id: question.student_id,
+            lecture_id: question.lecture_id,
+            timestamp: question.timestamp,
+            is_answered: question.is_answered,
+            is_important: question.is_important,
+            upvotes: question.upvotes,
+            upvoted_by: question.upvoted_by,
+            answer: question.answer
+          }
         }
       });
     } catch (error) {
@@ -506,8 +606,11 @@ const studentController = {
         message: 'Successfully joined the class',
         data: {
           lecture: {
-            id: lecture._id,
+            lecture_id: lecture.lecture_id,
             lecture_title: lecture.lecture_title,
+            lec_num: lecture.lec_num,
+            class_start: lecture.class_start,
+            class_end: lecture.class_end,
             joined_students_count: lecture.joined_students.length
           }
         }
@@ -578,12 +681,18 @@ const studentController = {
       const { question_id, answer_text, answer_type } = req.body;
       const studentId = req.user.id;
 
-      // Only allow if student is TA
+      // Only allow if student is TA for this course
       const student = await Student.findById(studentId);
-      if (!student || !student.is_TA) {
+      const { lecture_id } = req.body;
+      let courseIdForLecture = null;
+      if (lecture_id) {
+        const lecture = await Lecture.findOne({ lecture_id });
+        if (lecture) courseIdForLecture = lecture.course_id;
+      }
+      if (!student || !courseIdForLecture || !student.is_TA.includes(courseIdForLecture)) {
         return res.status(403).json({
           success: false,
-          message: 'Only TAs can answer questions.'
+          message: 'Only TAs for this course can answer questions.'
         });
       }
 
@@ -628,7 +737,95 @@ const studentController = {
         error: error.message
       });
     }
-  }    
+  }, 
+  
+  deleteQuestion: async (req, res) => {
+    try {
+      const question_id = req.params.question_id;
+      const studentId = req.user.id;
+
+      if (!question_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'question_id is required.'
+        });
+      }
+
+      // Find the question by question_id and student_id
+      const question = await Question.findOne({ question_id, student_id: studentId });
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Question not found or not owned by user.'
+        });
+      }
+
+      if (question.is_answered) {
+        return res.status(400).json({
+          success: false,
+          message: 'Answered questions cannot be deleted.'
+        });
+      }
+
+      await Question.deleteOne({ question_id, student_id: studentId });
+
+      res.status(200).json({
+        success: true,
+        message: 'Question deleted successfully.'
+      });
+    }
+     catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  },
+
+  deleteAnswer: async (req, res) => {
+    try {
+      const question_id = req.params.question_id;
+      const studentId = req.user.id;
+
+      if (!question_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'question_id is required.'
+        });
+      }
+
+      // Find the question by question_id and student_id (only allow owner to clear answer)
+      const question = await Question.findOne({ question_id, student_id: studentId });
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Question not found or not owned by user.'
+        });
+      }
+
+      // Remove all answers associated with this question
+      if (Array.isArray(question.answer) && question.answer.length > 0) {
+        await Answer.deleteMany({ _id: { $in: question.answer } });
+      }
+
+      // Clear the answer array and mark as not answered
+      question.answer = [];
+      question.is_answered = false;
+      await question.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'Answer(s) deleted and question cleared.'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+  }
 
 };
 
