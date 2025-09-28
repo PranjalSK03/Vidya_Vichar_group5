@@ -16,11 +16,10 @@ import TeacherDashboard from './pages/teacher/TeacherDashboard'
 import StudentOverview from './pages/student/StudentOverview'
 import EnrolledCourses from './pages/student/EnrolledCourses'
 import CourseDetails from './pages/student/CourseDetails'
-import StudentClasses from './pages/student/StudentClasses'
-import AllDoubts from './pages/student/AllDoubts'
-import AnsweredDoubts from './pages/student/AnsweredDoubts'
-import AskDoubt from './pages/student/AskDoubt'
-import JoinCourse from './pages/student/JoinCourse'
+import MyLectures from './pages/student/MyLectures'
+import PreviousLectures from './pages/student/PreviousLectures'
+import JoinLecture from './pages/student/JoinLecture'
+import AskQuestion from './pages/student/AskQuestion'
 import AvailableCourses from './pages/student/AvailableCourses'
 
 // Teacher Dashboard Components (these will be created later)
@@ -57,11 +56,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/student/dashboard/overview" element={<StudentOverview />} />
         <Route path="/student/dashboard/enrolled-courses" element={<EnrolledCourses />} />
         <Route path="/student/dashboard/course/:courseId" element={<CourseDetails />} />
-        <Route path="/student/dashboard/classes" element={<StudentClasses />} />
-        <Route path="/student/dashboard/all-doubts" element={<AllDoubts />} />
-        <Route path="/student/dashboard/answered-doubts" element={<AnsweredDoubts />} />
-        <Route path="/student/dashboard/ask-doubt" element={<AskDoubt />} />
-        <Route path="/student/dashboard/join-course" element={<JoinCourse />} />
+  <Route path="/student/dashboard/my-lectures" element={<MyLectures />} />
+  <Route path="/student/dashboard/previous-lectures" element={<PreviousLectures />} />
+  <Route path="/student/join-lecture/:lectureId" element={<JoinLecture />} />
+  <Route path="/student/ask-question/:lectureId" element={<AskQuestion />} />
         <Route path="/student/dashboard/available-courses" element={<AvailableCourses />} />
         
         {/* Teacher Dashboard Sub-Routes */}

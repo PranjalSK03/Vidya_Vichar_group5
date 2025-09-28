@@ -1,4 +1,3 @@
-
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Student = require('../models/Students');
@@ -6,11 +5,31 @@ const Teacher = require('../models/Teachers');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
+
+// Get available batch options
+exports.getBatchOptions = (req, res) => {
+  const batchOptions = ['M.Tech', 'B.Tech', 'PHD', 'MS'];
+  res.status(200).json({
+    success: true,
+    options: batchOptions
+  });
+};
+
+// Get available branch options
+exports.getBranchOptions = (req, res) => {
+  const branchOptions = ['CSE', 'ECE'];
+  res.status(200).json({
+    success: true,
+    options: branchOptions
+  });
+};
+
+
 // Register Student
 exports.registerStudent = async (req, res) => {
   try {
-    const { username, password, name, roll_no, is_TA, courses_id, batch, branch } = req.body;
-    if (!username || !password || !name || !roll_no || !courses_id || !batch || !branch) {
+    const { username, password, name, roll_no, batch, branch } = req.body;
+    if (!username || !password || !name || !roll_no || !batch || !branch) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
     const existing = await Student.findOne({ username });
@@ -23,8 +42,9 @@ exports.registerStudent = async (req, res) => {
       password: hashedPassword,
       name,
       roll_no,
-      is_TA: is_TA || false,
-      courses_id,
+      is_TA: false,
+      courses_id_request: [],
+      courses_id_enrolled: [],
       batch,
       branch
     });
@@ -39,11 +59,11 @@ exports.registerStudent = async (req, res) => {
 // Register Teacher
 exports.registerTeacher = async (req, res) => {
   try {
-    const { teacher_id, username, password, courses_id } = req.body;
-    if (!teacher_id || !username || !password) {
+    const { teacher_id, username, name, password } = req.body;
+    if (!teacher_id || !username || !name || !password) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
-    const existing = await Teacher.findOne({ username });
+    const existing = await Teacher.findOne({ $or: [ { username }, { teacher_id }, { name } ] });
     if (existing) {
       return res.status(400).json({ message: 'Teacher already exists.' });
     }
@@ -51,8 +71,9 @@ exports.registerTeacher = async (req, res) => {
     const teacher = new Teacher({
       teacher_id,
       username,
+      name,
       password: hashedPassword,
-      courses_id: courses_id || []
+      courses_id: []
     });
     await teacher.save();
     res.status(201).json({ message: 'Teacher registered successfully.' });
@@ -84,8 +105,12 @@ exports.loginStudent = async (req, res) => {
       maxAge: 0.5 * 60 * 60 * 1000 // 1/2 hour
     });
     return res.status(200).json({
+      success: true,
       message: 'Login successful',
-      role: 'student'
+      data: {
+        token,
+        user
+      }
     });
   } 
   catch (err) {
@@ -115,8 +140,12 @@ exports.loginTeacher = async (req, res) => {
       maxAge: 0.5 * 60 * 60 * 1000 // 1/2 day
     });
     return res.status(200).json({
+      success: true,
       message: 'Login successful',
-      role: 'teacher'
+      data: {
+        token,
+        user
+      }
     });
   } 
   catch (err) {

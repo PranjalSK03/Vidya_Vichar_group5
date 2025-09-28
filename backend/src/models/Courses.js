@@ -12,12 +12,14 @@ const CoursesSchema = new mongoose.Schema({
     required: true
   },
   teacher_id: [{
-    type: String,
-    unique: true
+    type: String
+  }],
+  TA: [{
+    type: String
   }],
   batch: {
     type: String,
-    enum: ['MT', 'BT', 'PH', 'MS'],
+    enum: ['M.Tech', 'B.Tech', 'PHD', 'MS'],
     required: true
   },
   branch: {

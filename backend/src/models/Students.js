@@ -20,17 +20,20 @@ const StudentSchema = new mongoose.Schema({
 		type: String,
 		required: true
 	},
-	is_TA: {
-		type: Boolean,
-		default: false
-	},
-	courses_id: {
+	is_TA: [{//contains list of course ids where student is TA
 		type: String,
-		required: true
-	},
+	}],
+    courses_id_request: [{
+    	type: String,
+    	required: true
+    }],
+    courses_id_enrolled: [{
+    	type: String,
+    	required: true
+    }],
 	batch: {
 		type: String,
-		enum: ['MT', 'BT', 'PH', 'MS'],
+		enum: ['M.Tech', 'B.Tech', 'PHD', 'MS'],
 		required: true
 	},
 	branch: {

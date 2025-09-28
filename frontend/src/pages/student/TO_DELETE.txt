@@ -1,0 +1,6 @@
+This file is a placeholder to track files to be deleted:
+- AnsweredDoubts.jsx
+- AllDoubts.jsx
+- AskDoubt.jsx
+- JoinCourse.jsx
+- StudentClasses.jsx

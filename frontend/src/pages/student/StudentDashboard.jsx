@@ -1,6 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../Dashboard.css';
+import EnrolledCourses from './EnrolledCourses';
+import AvailableCourses from './AvailableCourses';
+import PendingCourses from './PendingCourses';
+import MyLectures from './MyLectures';
+import PreviousLectures from './PreviousLectures';
 
 const StudentDashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -46,154 +52,82 @@ const StudentDashboard = () => {
     navigate('/');
   };
 
+  // Overview state
+  const [overview, setOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState(null);
+
+  // Fetch overview data when overview tab is active
+  useEffect(() => {
+    if (activeSection === 'overview') {
+      const fetchOverview = async () => {
+        setOverviewLoading(true);
+        setOverviewError(null);
+        try {
+          const token = localStorage.getItem('token');
+          const res = await fetch('/api/users/student/dashboard/overview', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (data.success) {
+            setOverview(data.data);
+          } else {
+            setOverviewError(data.message || 'Failed to fetch overview');
+          }
+        } catch (err) {
+          setOverviewError('Network error');
+        } finally {
+          setOverviewLoading(false);
+        }
+      };
+      fetchOverview();
+    }
+  }, [activeSection]);
+
   // Section rendering functions
-  const renderOverview = () => (
-    <div>
-      <h3>Student Overview</h3>
-      <p>Welcome to your dashboard, {userData?.name}!</p>
-      <div className="overview-stats">
-        <div className="stat-card">
-          <h4>Enrolled Courses</h4>
-          <p>3</p>
-        </div>
-        <div className="stat-card">
-          <h4>Completed Assignments</h4>
-          <p>12</p>
-        </div>
-        <div className="stat-card">
-          <h4>Pending Doubts</h4>
-          <p>2</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderEnrolledCourses = () => (
-    <div>
-      <h3>Enrolled Courses</h3>
-      <p>View all your enrolled courses</p>
-      <div className="course-list">
-        <div className="course-card">
-          <h4>Mathematics 101</h4>
-          <p>Progress: 75%</p>
-        </div>
-        <div className="course-card">
-          <h4>Physics 201</h4>
-          <p>Progress: 60%</p>
-        </div>
-        <div className="course-card">
-          <h4>Chemistry 301</h4>
-          <p>Progress: 90%</p>
+  const renderOverview = () => {
+    if (overviewLoading) return <div>Loading...</div>;
+    if (overviewError) return <div style={{color:'red'}}>{overviewError}</div>;
+    if (!overview) return <div>No overview data.</div>;
+    return (
+      <div>
+        <h3>Student Overview</h3>
+        <p>Welcome, {overview.name}!</p>
+        <div><strong>Roll No:</strong> {overview.roll_no} | <strong>Batch:</strong> {overview.batch} | <strong>Branch:</strong> {overview.branch}</div>
+        <div className="overview-stats">
+          <div className="stat-card">
+            <h4>Enrolled Courses</h4>
+            <p>{overview.numCoursesEnrolled}</p>
+          </div>
+          <div className="stat-card">
+            <h4>Pending Requests</h4>
+            <p>{overview.pendingCourses}</p>
+          </div>
+          <div className="stat-card">
+            <h4>Unanswered Questions</h4>
+            <p>{overview.unansweredQuestions}</p>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderAvailableCourses = () => (
-    <div>
-      <h3>Available Courses</h3>
-      <p>Discover new courses to enroll in</p>
-      <div className="course-list">
-        <div className="course-card">
-          <h4>Advanced Calculus</h4>
-          <p>Instructor: Dr. Johnson | Duration: 12 weeks</p>
-          <button className="primary-btn">Enroll Now</button>
-        </div>
-        <div className="course-card">
-          <h4>Data Structures</h4>
-          <p>Instructor: Prof. Davis | Duration: 16 weeks</p>
-          <button className="primary-btn">Enroll Now</button>
-        </div>
-      </div>
-    </div>
-  );
+  // Use the real EnrolledCourses component for enrolled courses tab
+  const renderEnrolledCourses = () => <EnrolledCourses />;
 
-  const renderClasses = () => (
-    <div>
-      <h3>My Classes</h3>
-      <p>View your upcoming and past classes</p>
-      <div className="class-list">
-        <div className="class-item">
-          <h4>Mathematics - Integration</h4>
-          <p>Today, 10:00 AM | Room: 101</p>
-        </div>
-        <div className="class-item">
-          <h4>Physics - Mechanics</h4>
-          <p>Tomorrow, 2:00 PM | Room: 205</p>
-        </div>
-      </div>
-    </div>
-  );
+  // Use the real AvailableCourses component for available courses tab
+  const renderAvailableCourses = () => <AvailableCourses />;
+  const renderPendingCourses = () => <PendingCourses />;
 
-  const renderAllDoubts = () => (
-    <div>
-      <h3>All Doubts</h3>
-      <p>View all your submitted questions</p>
-      <div className="doubt-list">
-        <div className="doubt-item">
-          <h4>Question about Integration by Parts</h4>
-          <p>Subject: Mathematics | Status: Pending</p>
-        </div>
-        <div className="doubt-item answered">
-          <h4>Physics Lab Equipment</h4>
-          <p>Subject: Physics | Status: Answered</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAnsweredDoubts = () => (
-    <div>
-      <h3>Answered Doubts</h3>
-      <p>Your questions that have been answered</p>
-      <div className="doubt-list">
-        <div className="doubt-item answered">
-          <h4>Chemistry Equation Balancing</h4>
-          <p>Answered by: Dr. Smith | Yesterday</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderAskDoubt = () => (
-    <div>
-      <h3>Ask a Question</h3>
-      <p>Submit your doubts and get help from teachers</p>
-      <form className="create-form">
-        <select>
-          <option>Select Subject</option>
-          <option>Mathematics</option>
-          <option>Physics</option>
-          <option>Chemistry</option>
-        </select>
-        <input type="text" placeholder="Question Title" />
-        <textarea placeholder="Describe your doubt in detail"></textarea>
-        <button type="submit" className="primary-btn">Submit Question</button>
-      </form>
-    </div>
-  );
-
-  const renderJoinCourse = () => (
-    <div>
-      <h3>Join Course</h3>
-      <p>Enter course code to join a new course</p>
-      <form className="create-form">
-        <input type="text" placeholder="Course Code" />
-        <button type="submit" className="primary-btn">Join Course</button>
-      </form>
-    </div>
-  );
 
   const renderSection = () => {
     switch(activeSection) {
       case 'overview': return renderOverview();
       case 'enrolled-courses': return renderEnrolledCourses();
       case 'available-courses': return renderAvailableCourses();
-      case 'classes': return renderClasses();
-      case 'all-doubts': return renderAllDoubts();
-      case 'answered-doubts': return renderAnsweredDoubts();
-      case 'ask-doubt': return renderAskDoubt();
-      case 'join-course': return renderJoinCourse();
+      case 'pending-courses': return renderPendingCourses();
+      case 'my-lectures': return <MyLectures />;
+      case 'previous-lectures': return <PreviousLectures />;
       default: return renderOverview();
     }
   };
@@ -249,39 +183,25 @@ const StudentDashboard = () => {
               Available Courses
             </div>
             <div 
-              onClick={() => setActiveSection('classes')} 
-              className={`nav-item ${activeSection === 'classes' ? 'active' : ''}`}
+              onClick={() => setActiveSection('pending-courses')} 
+              className={`nav-item ${activeSection === 'pending-courses' ? 'active' : ''}`}
             >
-              <span className="nav-icon">🏫</span>
-              My Classes
+              <span className="nav-icon">⏳</span>
+              Pending Courses
             </div>
             <div 
-              onClick={() => setActiveSection('all-doubts')} 
-              className={`nav-item ${activeSection === 'all-doubts' ? 'active' : ''}`}
+              onClick={() => setActiveSection('my-lectures')} 
+              className={`nav-item ${activeSection === 'my-lectures' ? 'active' : ''}`}
             >
-              <span className="nav-icon">❓</span>
-              All Doubts
+              <span className="nav-icon">📝</span>
+              My Lectures
             </div>
             <div 
-              onClick={() => setActiveSection('answered-doubts')} 
-              className={`nav-item ${activeSection === 'answered-doubts' ? 'active' : ''}`}
+              onClick={() => setActiveSection('previous-lectures')} 
+              className={`nav-item ${activeSection === 'previous-lectures' ? 'active' : ''}`}
             >
-              <span className="nav-icon">✅</span>
-              Answered Doubts
-            </div>
-            <div 
-              onClick={() => setActiveSection('ask-doubt')} 
-              className={`nav-item ${activeSection === 'ask-doubt' ? 'active' : ''}`}
-            >
-              <span className="nav-icon">💭</span>
-              Ask Doubt
-            </div>
-            <div 
-              onClick={() => setActiveSection('join-course')} 
-              className={`nav-item ${activeSection === 'join-course' ? 'active' : ''}`}
-            >
-              <span className="nav-icon">➕</span>
-              Join Course
+              <span className="nav-icon">📂</span>
+              Previous Lectures
             </div>
           </nav>
         </aside>

@@ -67,25 +67,28 @@ project-root/
 
 ## Backend Model Schemas
 
+
 ### Student
-| Field        | Type    | Description                                  |
-|--------------|---------|----------------------------------------------|
-| username     | String  | Email, unique, required                      |
-| password     | String  | Hashed password, required                    |
-| name         | String  | Student's name, required                     |
-| roll_no      | String  | Roll number, required                        |
-| is_TA        | Boolean | Is Teaching Assistant, default: false         |
-| courses_id   | String  | Course ID(s), required                       |
-| batch        | String  | MT/BT/PH/MS, required                        |
-| branch       | String  | CSE/ECE, required                            |
+| Field               | Type      | Description                                             |
+|---------------------|-----------|---------------------------------------------------------|
+| username            | String    | Email, unique, required                                 |
+| password            | String    | Hashed password, required                               |
+| name                | String    | Student's name, required                                |
+| roll_no             | String    | Roll number, required                                   |
+| is_TA               | [String]  | Array of course IDs where student is TA                 |
+| courses_id_request  | [String]  | Array of course IDs requested for enrollment            |
+| courses_id_enrolled | [String]  | Array of enrolled course IDs                            |
+| batch               | String    | M.Tech/B.Tech/PHD/MS, required                         |
+| branch              | String    | CSE/ECE, required                                      |
 
 ### Teacher
-| Field        | Type    | Description                                  |
-|--------------|---------|----------------------------------------------|
-| teacher_id   | String  | Unique, required                             |
-| username     | String  | Email, unique, required                      |
-| password     | String  | Hashed password, required                    |
-| courses_id   | [String]| Array of unique course IDs                   |
+| Field        | Type      | Description                                  |
+|--------------|-----------|----------------------------------------------|
+| teacher_id   | String    | Unique, required                             |
+| username     | String    | Email, unique, required                      |
+| name         | String    | Name, unique, required                       |
+| password     | String    | Hashed password, required                    |
+| courses_id   | [String]  | Array of unique course IDs                   |
 
 ### Course
 | Field         | Type      | Description                                 |
@@ -93,7 +96,8 @@ project-root/
 | course_id     | String    | Unique, required                            |
 | course_name   | String    | Required                                    |
 | teacher_id    | [String]  | Array of unique teacher IDs                 |
-| batch         | String    | MT/BT/PH/MS, required                       |
+| TA            | [String]  | Array of student IDs who are TAs            |
+| batch         | String    | M.Tech/B.Tech/PHD/MS, required              |
 | branch        | String    | CSE/ECE, required                           |
 | valid_time    | Date      | Course valid until (date/time), required    |
 | request_list  | [String]  | Student IDs requesting enrollment           |
@@ -101,27 +105,31 @@ project-root/
 | lecture_id    | [String]  | Array of lecture IDs                        |
 
 ### Lecture
-| Field         | Type      | Description                                 |
-|---------------|-----------|---------------------------------------------|
-| lecture_id    | String    | Unique, required                            |
-| course_id     | String    | Unique, required (course this lecture is in)|
-| class_date_time| Date     | Date and time of the class                  |
-| lec_num       | Number    | Lecture number for the course               |
-| query_id      | [String]  | Array of unique query IDs                   |
-| teacher_id    | String    | Teacher for the lecture                     |
+| Field          | Type      | Description                                 |
+|----------------|-----------|---------------------------------------------|
+| lecture_id     | String    | Unique, required                            |
+| lecture_title  | String    | Title of the lecture, required              |
+| course_id      | String    | Course ID this lecture belongs to           |
+| class_start    | Date      | Start time of the class                     |
+| class_end      | Date      | End time of the class                       |
+| lec_num        | Number    | Lecture number for the course               |
+| query_id       | [String]  | Array of unique query IDs                   |
+| joined_students| [String]  | Array of student IDs who joined             |
+| teacher_id     | String    | Teacher for the lecture                     |
 
 ### Question
 | Field         | Type      | Description                                 |
 |---------------|-----------|---------------------------------------------|
 | question_id   | String    | Unique, required                            |
-| student_id    | String    | Unique, required (who asked)                |
-| lecture_id    | String    | Unique, required (which lecture)            |
+| question_text | String    | Question text, required                     |
+| student_id    | String    | Student ID (who asked), required            |
+| lecture_id    | String    | Lecture ID (which lecture), required        |
 | timestamp     | Date      | Date and time of question                   |
 | is_answered   | Boolean   | Whether answered                            |
-| is_teacher_answer | Boolean| Whether answered by teacher                 |
+| is_important  | Boolean   | Marked important                            |
 | upvotes       | Number    | Upvote count                                |
 | upvoted_by    | [String]  | Array of unique student IDs                 |
-| answer        | [Answer]  | Array of answers (see below)                |
+| answer        | [ObjectId]| Array of Answer IDs (see below)             |
 
 ### Answer
 | Field         | Type      | Description                                 |

@@ -9,7 +9,6 @@ const TeacherRegister= () => {
     email: '',
     password: '',
     confirmPassword: '',
-    department: '',
     universityId: ''
   });
   const [errors, setErrors] = useState([]);
@@ -25,16 +24,13 @@ const TeacherRegister= () => {
 
   const validateForm = () => {
     const newErrors= [];
-    
     if (!formData.name.trim()) newErrors.push('Name is required');
     if (!formData.email.trim()) newErrors.push('Email is required');
     if (!formData.password) newErrors.push('Password is required');
     if (formData.password !== formData.confirmPassword) {
       newErrors.push('Passwords do not match');
     }
-    if (!formData.department.trim()) newErrors.push('Department is required');
     if (!formData.universityId.trim()) newErrors.push('University ID is required');
-    
     setErrors(newErrors);
     return newErrors.length === 0;
   };
@@ -53,11 +49,10 @@ const TeacherRegister= () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          teacher_id: formData.universityId,
+          username: formData.email,
           name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          department: formData.department,
-          universityId: formData.universityId
+          password: formData.password
         }),
       });
 
@@ -123,27 +118,7 @@ const TeacherRegister= () => {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="department">Department</label>
-            <select
-              id="department"
-              name="department"
-              value={formData.department}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Select Department</option>
-              <option value="Computer Science">Computer Science</option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="Physics">Physics</option>
-              <option value="Chemistry">Chemistry</option>
-              <option value="Biology">Biology</option>
-              <option value="English">English</option>
-              <option value="History">History</option>
-              <option value="Business">Business</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
+          {/* Department field removed to match backend model */}
 
           <div className="form-group">
             <label htmlFor="universityId">University ID</label>

@@ -9,7 +9,9 @@ const StudentRegister= () => {
     email: '',
     password: '',
     confirmPassword: '',
-    universityId: ''
+    universityId: '',
+    batch: '',
+    branch: ''
   });
   const [errors, setErrors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +26,6 @@ const StudentRegister= () => {
 
   const validateForm = () => {
     const newErrors= [];
-    
     if (!formData.name.trim()) newErrors.push('Name is required');
     if (!formData.email.trim()) newErrors.push('Email is required');
     if (!formData.password) newErrors.push('Password is required');
@@ -32,7 +33,8 @@ const StudentRegister= () => {
       newErrors.push('Passwords do not match');
     }
     if (!formData.universityId.trim()) newErrors.push('University ID is required');
-    
+    if (!formData.batch) newErrors.push('Batch is required');
+    if (!formData.branch) newErrors.push('Branch is required');
     setErrors(newErrors);
     return newErrors.length === 0;
   };
@@ -52,9 +54,11 @@ const StudentRegister= () => {
         },
         body: JSON.stringify({
           name: formData.name,
-          email: formData.email,
+          username: formData.email,
           password: formData.password,
-          universityId: formData.universityId
+          roll_no: formData.universityId,
+          batch: formData.batch,
+          branch: formData.branch
         }),
       });
 
@@ -118,6 +122,51 @@ const StudentRegister= () => {
               placeholder="Enter your email"
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="universityId">University ID</label>
+            <input
+              type="text"
+              id="universityId"
+              name="universityId"
+              value={formData.universityId}
+              onChange={handleInputChange}
+              placeholder="Enter your university ID"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="batch">Batch</label>
+            <select
+              id="batch"
+              name="batch"
+              value={formData.batch}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Select Batch</option>
+              <option value="M.Tech">M.Tech</option>
+              <option value="B.Tech">B.Tech</option>
+              <option value="PHD">PHD</option>
+              <option value="MS">MS</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="branch">Branch</label>
+            <select
+              id="branch"
+              name="branch"
+              value={formData.branch}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="">Select Branch</option>
+              <option value="CSE">CSE</option>
+              <option value="ECE">ECE</option>
+            </select>
           </div>
 
           <div className="form-group">
