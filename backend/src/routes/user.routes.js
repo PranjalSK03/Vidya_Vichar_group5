@@ -36,7 +36,6 @@ router.delete('/student/dashboard/delete-answer/:question_id', authenticate(['st
 
 // Teacher Dashboard Overview and Profile
 router.get('/teacher/dashboard/overview', authenticate(['teacher']), teacherController.getTeacherOverview);
-router.put('/teacher/dashboard/profile', authenticate(['teacher']), teacherController.updateTeacherProfile);
 router.get('/teacher/all', authenticate(['teacher']), teacherController.getAllTeachers);
 router.get('/teacher/:teacher_id', authenticate(['teacher']), teacherController.getTeacherByid);
 router.get('/teacher/courses', authenticate(['teacher']), teacherController.getAllCourses);
@@ -45,6 +44,8 @@ router.get('/teacher/course/:course_id/students', authenticate(['teacher']), tea
 router.get('/teacher/course/:course_id/student/:student_id', authenticate(['teacher']), teacherController.getStudentById);
 router.get('/teacher/lecture/:lecture_id/questions', authenticate(['teacher']), teacherController.getAllQuestions);
 router.get('/teacher/question/:question_id/answers', authenticate(['teacher']), teacherController.getAllAnswers);
+//PUT
+router.put('/teacher/dashboard/profile', authenticate(['teacher']), teacherController.updateTeacherProfile);
 //POST
 router.post('/teacher/course', authenticate(['teacher']), teacherController.createCourse);
 router.post('/teacher/lecture', authenticate(['teacher']), teacherController.createLecture);
@@ -52,5 +53,10 @@ router.post('/teacher/course/make-ta', authenticate(['teacher']), teacherControl
 router.post('/teacher/question/answer', authenticate(['teacher']), teacherController.answerQuestion);
 router.post('/teacher/course/accept-requests', authenticate(['teacher']), teacherController.acceptPendingRequests);
 router.post('/teacher/course/reject-requests', authenticate(['teacher']), teacherController.rejectPendingRequests);
+//DELETE
+router.delete('/teacher/course/:course_id/remove-student', authenticate(['teacher']), teacherController.removeStudentFromCourse);
+router.delete('/teacher/lecture/:lecture_id', authenticate(['teacher']), teacherController.deleteLecture);
+router.delete('/teacher/question/:question_id', authenticate(['teacher']), teacherController.deleteQuestion);
+router.delete('/teacher/answer/:answer_id', authenticate(['teacher']), teacherController.deleteAnswer);
 
 module.exports = router;
