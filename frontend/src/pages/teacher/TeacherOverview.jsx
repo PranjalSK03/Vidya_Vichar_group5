@@ -20,8 +20,17 @@ const TeacherOverview = ({ overviewData, loading }) => {
     try {
       setLoadingLiveClasses(true);
       
-      // Real API call
-      const response = await apiRequest('/users/teacher/live-classes');
+      // Always send teacher_id as query param for reliability
+      let teacherId = null;
+      // Try to get teacherId from localStorage userData
+      try {
+        const userData = JSON.parse(localStorage.getItem('userData'));
+        teacherId = userData?.teacher_id;
+      } catch {}
+      const endpoint = teacherId
+        ? `/users/teacher/live-classes?teacher_id=${teacherId}`
+        : '/users/teacher/live-classes';
+      const response = await apiRequest(endpoint);
       
       if (response.success && response.data) {
         // Filter out classes that are ended by teacher

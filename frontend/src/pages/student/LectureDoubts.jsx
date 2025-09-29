@@ -26,17 +26,25 @@ const LectureDoubts = ({ userData, selectedLecture, selectedCourse, onBack }) =>
     try {
       setLoading(true);
       setError(null);
-      
-      // Use real API endpoint
-      const response = await api.student.getLectureDoubts(selectedLecture.lecture_id);
-      
-      if (response.success && response.data?.questions) {
-        setAllDoubts(response.data.questions);
+      // Debug: Log the lectureId being sent
+  console.log('LectureDoubts: Fetching doubts for lectureId:', selectedLecture);
+  // Use the correct endpoint for lecture doubts/questions
+  const response = await api.student.getLectureQuestions(selectedLecture);
+      console.log('LectureDoubts: API response:', response);
+      let doubts = [];
+      if (response.success) {
+        if (Array.isArray(response.data)) {
+          doubts = response.data;
+        } else if (response.data?.questions && Array.isArray(response.data.questions)) {
+          doubts = response.data.questions;
+        } else if (Array.isArray(response.data.doubts)) {
+          doubts = response.data.doubts;
+        }
+        setAllDoubts(doubts);
       } else {
         setError(response.message || 'Failed to fetch lecture doubts');
         setAllDoubts([]);
       }
-      
     } catch (error) {
       console.error('Error fetching lecture doubts:', error);
       setError('Failed to load lecture doubts. Please try again.');
@@ -166,8 +174,11 @@ const LectureDoubts = ({ userData, selectedLecture, selectedCourse, onBack }) =>
               {doubt.is_answered ? '✓ Answered' : '⏳ Pending'}
             </div>
           </div>
-          <p className="text-slate-700 mb-3">{doubt.question}</p>
-          
+          {/* Always show the question (support both 'question' and 'question_text' fields) */}
+          <div className="mb-3">
+            <span className="font-medium text-slate-700">Question:</span>
+            <p className="text-slate-700">{doubt.question || doubt.question_text}</p>
+          </div>
           {/* Resource References - only show if resources exist */}
           {doubt.referenced_resources && doubt.referenced_resources.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
@@ -189,7 +200,7 @@ const LectureDoubts = ({ userData, selectedLecture, selectedCourse, onBack }) =>
               )}
             </div>
           )}
-          
+          {/* Show answer only if present */}
           {doubt.is_answered && doubt.answer && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
               <div className="flex items-center gap-2 mb-2">

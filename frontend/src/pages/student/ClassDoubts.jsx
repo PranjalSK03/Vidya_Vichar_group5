@@ -71,7 +71,7 @@ const QuestionForm = ({
   </div>
 );
 
-const ClassDoubts = ({ lectureId, token, onBack }) => {
+const ClassDoubts = ({ lectureId, lectureObj, token, onBack }) => {
   const [activeTab, setActiveTab] = useState('all');
   const [allQuestions, setAllQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,10 +92,12 @@ const ClassDoubts = ({ lectureId, token, onBack }) => {
 
   const fetchLectureInfo = async () => {
     try {
-      // Get course information from the lecture
-      const courseResponse = await api.student.getCourseInfo(lectureId.course_id);
-      if (courseResponse.success) {
-        setCourseInfo(courseResponse.data);
+      // Get course information from the lectureObj
+      if (lectureObj && lectureObj.course_id) {
+        const courseResponse = await api.student.getCourseInfo(lectureObj.course_id);
+        if (courseResponse.success) {
+          setCourseInfo(courseResponse.data);
+        }
       }
     } catch (error) {
       console.error('Error fetching course info:', error);
@@ -134,7 +136,7 @@ const ClassDoubts = ({ lectureId, token, onBack }) => {
     try {
       setSubmittingQuestion(true);
       
-      const response = await api.student.askQuestion(questionText, lectureId);
+  const response = await api.student.askQuestion(questionText, lectureId);
       
       if (response.success) {
         // Reset form
@@ -372,7 +374,7 @@ const ClassDoubts = ({ lectureId, token, onBack }) => {
               </svg>
               <span className="font-medium text-slate-700">Course</span>
             </div>
-            <p className="text-lg font-semibold text-slate-800">{lectureId.course_id}</p>
+            <p className="text-lg font-semibold text-slate-800">{lectureObj?.course_id || 'Course'}</p>
             <p className="text-slate-600 text-sm">{courseInfo?.course_name || 'Course Name'}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border border-indigo-100">
@@ -382,8 +384,8 @@ const ClassDoubts = ({ lectureId, token, onBack }) => {
               </svg>
               <span className="font-medium text-slate-700">Lecture</span>
             </div>
-            <p className="text-lg font-semibold text-slate-800">Lecture {lectureId.lec_num}</p>
-            {lectureId.topic && <p className="text-slate-600 text-sm">{lectureId.topic}</p>}
+            <p className="text-lg font-semibold text-slate-800">Lecture {lectureObj?.lec_num || ''}</p>
+            {lectureObj?.topic && <p className="text-slate-600 text-sm">{lectureObj.topic}</p>}
           </div>
           <div className="bg-white rounded-lg p-4 border border-indigo-100">
             <div className="flex items-center gap-2 mb-2">
@@ -392,15 +394,15 @@ const ClassDoubts = ({ lectureId, token, onBack }) => {
               </svg>
               <span className="font-medium text-slate-700">Schedule</span>
             </div>
-            <p className="text-lg font-semibold text-slate-800">{new Date(lectureId.class_start).toLocaleDateString()}</p>
+            <p className="text-lg font-semibold text-slate-800">{lectureObj?.class_start ? new Date(lectureObj.class_start).toLocaleDateString() : 'Invalid Date'}</p>
             <p className="text-slate-600 text-sm">
-              {new Date(lectureId.class_start).toLocaleTimeString('en-US', { 
+              {lectureObj?.class_start ? new Date(lectureObj.class_start).toLocaleTimeString('en-US', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
-              })} - {new Date(lectureId.class_end).toLocaleTimeString('en-US', { 
+              }) : 'Invalid Date'} - {lectureObj?.class_end ? new Date(lectureObj.class_end).toLocaleTimeString('en-US', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
-              })}
+              }) : 'Invalid Date'}
             </p>
           </div>
         </div>

@@ -18,12 +18,10 @@ const ClassPage = ({ lectureData, userData, onBack, showAsLiveClass = false, onS
   }, [lectureInfo, filter]);
 
   const fetchQuestions = async () => {
-    if (!lectureInfo?.lecture_id) return;
-    
+    if (!lectureInfo?._id) return;
     try {
       setLoading(true);
-      
-      const endpoint = `/users/teacher/lecture/${lectureInfo.lecture_id}/questions`;
+      const endpoint = `/users/teacher/lecture/${lectureInfo._id}/questions`;
       console.log('🔍 ClassPage fetchQuestions: API call to:', endpoint);
       
       try {

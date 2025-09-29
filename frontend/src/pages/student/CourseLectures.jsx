@@ -168,7 +168,6 @@ const CourseLectures = ({ userData, selectedCourse, onLectureSelect, onBack }) =
           {lectures.map((lecture) => (
             <div
               key={lecture._id}
-              onClick={() => onLectureSelect && onLectureSelect(lecture)}
               className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-lg hover:border-indigo-300 transition-all duration-200 cursor-pointer group"
             >
               <div className="flex items-start justify-between mb-4">
@@ -193,12 +192,18 @@ const CourseLectures = ({ userData, selectedCourse, onLectureSelect, onBack }) =
               </div>
 
               <div className="flex items-center justify-end pt-4 border-t border-slate-100">
-                <div className="flex items-center gap-2 text-indigo-600 group-hover:text-indigo-700 font-medium">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLectureSelect && onLectureSelect(lecture); // Pass full lecture object
+                  }}
+                  className="flex items-center gap-2 text-indigo-600 group-hover:text-indigo-700 font-medium"
+                >
                   <span className="text-sm">View Doubts</span>
                   <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </div>
+                </button>
               </div>
             </div>
           ))}

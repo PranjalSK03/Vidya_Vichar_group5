@@ -205,8 +205,8 @@ const StudentDashboard = () => {
   };
 
   const handleLectureSelect = (lecture) => {
-    setSelectedLecture(lecture);
-    setAttendedCoursesView('doubts');
+  setSelectedLecture(lecture._id);
+  setAttendedCoursesView('doubts');
   };
 
   const handleBackToAttendedCourses = () => {
@@ -222,8 +222,8 @@ const StudentDashboard = () => {
 
   // Navigation handlers for join class flow
   const handleClassJoined = (lecture) => {
-    setSelectedClassLecture(lecture);
-    setJoinClassView('doubts');
+  setSelectedClassLecture({ lectureId: lecture._id, lectureObj: lecture });
+  setJoinClassView('doubts');
   };
 
   const handleBackToJoinClass = () => {
@@ -264,7 +264,10 @@ const StudentDashboard = () => {
               <CourseLectures 
                 userData={userData}
                 selectedCourse={selectedCourse}
-                onLectureSelect={handleLectureSelect}
+                onLectureSelect={lecture => {
+                  setSelectedLecture(lecture._id);
+                  setAttendedCoursesView('doubts');
+                }}
                 onBack={handleBackToAttendedCourses}
               />
             );
@@ -272,7 +275,7 @@ const StudentDashboard = () => {
             return (
               <LectureDoubts 
                 userData={userData}
-                selectedLecture={selectedLecture}
+                lectureId={selectedLecture}
                 selectedCourse={selectedCourse}
                 onBack={handleBackToCourseLectures}
               />
@@ -292,7 +295,8 @@ const StudentDashboard = () => {
             return (
               <ClassDoubts 
                 userData={userData}
-                selectedLecture={selectedClassLecture}
+                lectureId={selectedClassLecture?.lectureId}
+                lectureObj={selectedClassLecture?.lectureObj}
                 onBack={handleBackToJoinClass}
               />
             );

@@ -192,102 +192,28 @@ const TeacherDashboard = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.log('=== TEACHER DASHBOARD LOADED ===');
-    console.log('Current location:', location.pathname);
-    console.log('User:', userData?.name, '| Role:', localStorage.getItem('userRole'));
-    
-    // Check if auth bypass is enabled - always enable for development
-    const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === 'true' || import.meta.env.NODE_ENV === 'development';
-    console.log('Bypass auth enabled:', bypassAuth, '(ENV VITE_BYPASS_AUTH:', import.meta.env.VITE_BYPASS_AUTH, ', NODE_ENV:', import.meta.env.NODE_ENV, ')');
-    
-    // Always set mock data for development to ensure tokens work
-    console.log('🔧 Setting mock authentication data for development');
-    localStorage.setItem('userRole', 'teacher');
-    localStorage.setItem('token', 'mock-jwt-token-for-development');
-    localStorage.setItem('userData', JSON.stringify({
-      id: 'TEACH001',
-      teacherId: 'TEACH001',
-      name: 'Dr. Jane Smith',
-      teacher_id: 'TEACH001',
-      username: 'jane.smith@university.edu',
-      courses_id: ['CS101', 'CS201']
-    }));
-    
-    if (bypassAuth) {
-      console.log('Using auth bypass with mock data');
-      
-      // Mock user data for development
-      setUserData({
-        id: 'TEACH001',
-        name: 'Dr. Jane Smith',
-        teacher_id: 'TEACH001',
-        username: 'jane.smith@university.edu',
-        courses_id: ['CS101', 'CS201']
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Check localStorage contents
+    // Only use real user data from registration/login
     const userRole = localStorage.getItem('userRole');
     const storedUserData = localStorage.getItem('userData');
     const token = localStorage.getItem('token');
-    
-    console.log('=== LOCALSTORAGE STATUS ===');
-    console.log('userRole:', userRole);
-    console.log('storedUserData exists:', !!storedUserData);
-    console.log('storedUserData length:', storedUserData ? storedUserData.length : 0);
-    console.log('token exists:', !!token);
-    console.log('token preview:', token ? token.substring(0, 20) + '...' : 'None');
-    console.log('Raw storedUserData:', storedUserData);
-    
-    // Check for cookie (if accessible)
-    console.log('Document cookies:', document.cookie);
 
-    // Add small delay to prevent race conditions during navigation
-    const timeoutId = setTimeout(() => {
-      console.log('=== AUTHENTICATION VALIDATION ===');
-      
-      // Check user role
-      if (!userRole) {
-        console.log('❌ No userRole found in localStorage');
-        navigate('/teacher/login');
-        return;
-      }
-      
-      if (userRole !== 'teacher') {
-        console.log('❌ Invalid user role:', userRole);
-        navigate('/teacher/login');
-        return;
-      }
-      
-      console.log('✅ User role is valid:', userRole);
-
-      // Check user data
-      if (!storedUserData || storedUserData === 'undefined' || storedUserData === 'null') {
-        console.log('❌ No valid userData found in localStorage');
-        navigate('/teacher/login');
-        return;
-      }
-
-      // Parse user data
-      try {
-        const parsedData = JSON.parse(storedUserData);
-        console.log('✅ Parsed user data:', parsedData);
-        setUserData(parsedData);
-        setLoading(false);
-      } catch (error) {
-        console.log('❌ Error parsing user data:', error);
-        localStorage.removeItem('userData');
-        navigate('/teacher/login');
-        return;
-      }
-    }, 200);
-
-    return () => {
-      console.log('Cleaning up authentication timeout');
-      clearTimeout(timeoutId);
-    };
+    // Validate authentication
+    if (!userRole || userRole !== 'teacher') {
+      navigate('/teacher/login');
+      return;
+    }
+    if (!storedUserData || storedUserData === 'undefined' || storedUserData === 'null') {
+      navigate('/teacher/login');
+      return;
+    }
+    try {
+      const parsedData = JSON.parse(storedUserData);
+      setUserData(parsedData);
+      setLoading(false);
+    } catch (error) {
+      localStorage.removeItem('userData');
+      navigate('/teacher/login');
+    }
   }, [navigate, location.pathname]);
 
   // Fetch overview data when user data is available
@@ -341,12 +267,8 @@ const TeacherDashboard = () => {
     console.log('Current userRole:', localStorage.getItem('userRole'));
     console.log('Current userData:', localStorage.getItem('userData'));
     
-    // Force set the token
-    localStorage.setItem('userRole', 'teacher');
-    localStorage.setItem('token', 'mock-jwt-token-for-development');
-    
-    console.log('✅ Token set to: mock-jwt-token-for-development');
-    alert('Debug: Token has been set in localStorage. Check console for details.');
+  // Debug only: Show current token info, do not set mock data
+  alert('Debug: Token info logged to console.');
   };
 
   const handleClassCreated = (lectureData) => {
@@ -372,9 +294,10 @@ const TeacherDashboard = () => {
   }, []);
 
   const handleBackFromClass = () => {
-    setCurrentClassData(null);
-    setShowAsLiveClass(false);
-    setActiveSection('create-lecture');
+  setCurrentClassData(null);
+  setShowAsLiveClass(false);
+  // After leaving class, show overview (which fetches live classes)
+  setActiveSection('overview');
   };
 
   const renderSection = () => {
@@ -753,8 +676,8 @@ const TeacherDashboard = () => {
           {/* User actions */}
           <div className="flex items-center gap-4">
             <div className="hidden sm:block text-right">
-              <div className="text-sm font-semibold text-slate-900">Welcome, {userData?.name || 'Teacher'}</div>
-              <div className="text-xs text-slate-500">{userData?.teacher_id || 'Teacher ID'}</div>
+              <div className="text-sm font-semibold text-slate-900">Welcome, {userData?.name || userData?.username || 'Teacher'}</div>
+              <div className="text-xs text-slate-500">{userData?.teacher_id || userData?.id || 'Teacher ID'}</div>
             </div>
             {/* Debug Button (Development only) */}
             <button 
